@@ -1,0 +1,201 @@
+#define _CRT_NONSTDC_NO_WARNINGS
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <conio.h>
+#include <memory.h>
+
+int number = 0;
+
+// Входные данные - адреса. Выходные данные - данные. Входные данные передаются адресами через регистры, выходные данные находятся в стеке.
+int calc(int* a_link, int* b_link, int* c_link, int* d_link, int* e_link)
+{
+    // y = a * b - c / d + e
+    int result;
+    int a = *a_link;
+    int b = *b_link;
+    int c = *c_link;
+    int d = *d_link;
+    int e = *e_link;
+
+    __asm {
+        mov eax, a
+        mov ebx, b
+        imul eax, ebx // a * b
+        cdq
+        mov ebx, eax
+        mov eax, c
+        mov edx, 0
+        idiv d // c / d
+        sub ebx, eax // a * b - c / d
+        add ebx, e // a * b - c / d + e
+        mov result, ebx
+    }
+    return result;
+}
+
+// Входные данные - адреса. Выходные данные - данные.
+char* asbin(char* DecimalSource) {
+    char temp[50];
+    int number = 0;
+    char* result;
+    char digit;
+    int i = 0;
+
+    __asm
+    {
+        lea eax, DecimalSource;
+        mov result, eax;
+
+    ToDecimal:
+        // Проверка условия (*result != 0)
+        mov eax, result;
+        xor ecx, ecx; // Очистка ecx
+        mov cl, byte ptr[eax]; // Занесение цифры из строки в регистр cl
+        test cl, cl;
+        je ToDecimalEnd; // Если ecx == 0, то переход на ToDecimalEnd
+
+        // Перевод строчной цифры в обычную
+        sub ecx, 0x30;
+        mov digit, cl;
+        // Формирование самого числа из строки (перевод в 10 систему)
+        mov eax, number; // Занесение числа в 10 системе в eax
+        xor ebx, ebx; // Очистка ebx
+        mov bx, 10; // Занесение множителя для перевода из 10 системы счисления
+        mul bx; // Умножение eax на bx (number * 10)
+        xor ebx, ebx; // Очистка ebx
+        mov bl, digit; // Занесение символьной записи чисте в bl
+        add eax, ebx;  // Сумма полученного произведения и нашей цифры (number * 10 + digit)
+        mov number, eax; // Запись полученной суммы в eax
+        inc result; // Смещение к следующей цифре в строке
+        jmp ToDecimal;
+    ToDecimalEnd:
+        // Перевод полученного десятичного числа в строку
+        lea eax, temp;
+        add eax, 49;
+        mov result, eax;
+        mov byte ptr[eax], 0;
+
+        // Перевод числа из 10 в 2
+    ToBinary:
+        // Проверка условия окончания цикла (number > 0)
+        cmp number, 0;
+        jle ToBinaryEnd;
+        mov eax, number;
+        xor edx, edx;
+        mov ebx, 2;  // Помещаем 2 в ebx для перевода числа в двоичную систему
+        div ebx;  // Делим eax на ebx, частное в EAX, остаток в EDX
+        mov number, eax;
+
+        // Перевод цифры в строчную цифру
+        add edx, 0x30;
+        mov digit, dl;
+        // Копирование символа цифры в строку
+        dec result;
+        mov eax, result;
+        mov byte ptr[eax], dl;
+        // Переход к следующей цифре
+        jmp ToBinary;
+    ToBinaryEnd:
+    }
+
+    return result;
+}
+
+// Входные данные - адреса. Выходные данные - данные. Входные данные через стек, выходные глобальной переменной в коде  
+int binasc(char BinarySource[]) {
+    char temp[50];
+    char* result;
+    char digit;
+    int i = 0;
+
+    __asm
+    {
+        lea eax, BinarySource;
+        mov result, eax;
+
+    ToDecimal:
+        // Проверка условия (*result != 0)
+        mov eax, result;
+        xor ecx, ecx; // Очистка ecx
+        mov cl, byte ptr[eax]; // Занесение цифры из строки в регистр cl
+        test cl, cl;
+        je ToDecimalEnd; // Если ecx == 0, то переход на ToDecimalEnd
+
+        // Перевод строчной цифры в обычную
+        sub ecx, 0x30;
+        mov digit, cl;
+        // Формирование самого числа из строки (перевод в 10 систему)
+        mov eax, number; // Занесение числа в 10 системе в eax
+        xor ebx, ebx; // Очистка ebx
+        mov bx, 2; // Занесение множителя для перевода из 10 системы счисления
+        mul bx; // Умножение eax на bx (number * 10)
+        xor ebx, ebx; // Очистка ebx
+        mov bl, digit; // Занесение символьной записи чисте в bl
+        add eax, ebx;  // Сумма полученного произведения и нашей цифры (number * 10 + digit)
+        mov number, eax; // Запись полученной суммы в eax
+        inc result; // Смещение к следующей цифре в строке
+        jmp ToDecimal;
+    ToDecimalEnd:
+        // Перевод полученного десятичного числа в строку
+        lea eax, temp;
+        add eax, 49;
+        mov result, eax;
+        mov byte ptr[eax], 0;
+    }
+
+    return number;
+}
+
+int main()
+{
+
+    printf("Calculation Section. (a * b - c / d + e)\n");
+    int a, b, c, d, e, value;
+    printf("Enter variable a value: ");
+    scanf_s("%d", &a);
+    printf("Enter variable b value: ");
+    scanf_s("%d", &b);
+    printf("Enter variable c value: ");
+    scanf_s("%d", &c);
+    printf("Enter variable d value: ");
+    scanf_s("%d", &d);
+    printf("Enter variable e value: ");
+    scanf_s("%d", &e);
+    int* a_link = &a;
+    int* b_link = &b;
+    int* c_link = &c;
+    int* d_link = &d;
+    int* e_link = &e;
+    __asm {
+        push e_link
+        push d_link
+        push c_link
+        push b_link
+        push a_link
+        call calc
+        add esp, 20
+        mov value, eax
+    }
+    printf("Calculation Result = %d\n", value);
+
+    char DecimalSource[] = "1234";
+
+    printf("String Value To Binary Value Section. \n");
+    char* BinaryResult = asbin(DecimalSource);
+    printf("Your Binary Result = %s\n", BinaryResult);
+
+    printf("String Binary Value To Decimal Value Section. \n");
+    char BinarySource[] = "110";
+    int DecimalResult;
+    __asm {
+        push BinarySource
+        call binasc
+        add esp, 3
+        mov DecimalResult, eax
+    }
+    printf("Your Decimal Result = %d\n", DecimalResult);
+
+    getch();
+}
